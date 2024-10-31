@@ -20,18 +20,62 @@
         -o-user-select:all;
         user-select: all;
       }
+      tbody[id^="operation-result"] tr:nth-child(odd) {
+        background-color: #cfcfcf;
+      }
+      tbody[id^="operation-result"] tr:nth-child(even) {
+        background-color: #f7f7f7;
+      }
+      tbody[id^="operation-result"] tr {
+        text-align: center;
+      }
+      tbody#operation-result-1 {
+        counter-reset: rowNumber;
+      }
+      tbody#operation-result-2 {
+        counter-reset: rowNumber 12;
+      }
+      tbody#operation-result-1 tr::before {
+        display: table-cell;
+        counter-increment: rowNumber;
+        content: counter(rowNumber);
+        padding-right: 0.3em;
+        text-align: right;
+      }
+      tbody#operation-result-2 tr::before {
+        display: table-cell;
+        counter-increment: rowNumber;
+        content: counter(rowNumber);
+        padding-right: 0.3em;
+        text-align: right;
+      }
+      #operation-result-wrapper table thead tr::before {
+        display: table-cell;
+        content: "#";
+        padding-right: 0.3em;
+        text-align: right;
+      }
+      tbody[id^="operation-result"] tr:not(:hover) {
+        opacity: 0.2;
+      }
+      tbody[id^="operation-result"] tr:hover {
+        background-color: #cfcfcf;
+      }
+      #operation-result-wrapper table:not(:hover) tr {
+        opacity: 1;
+      }
     </style>
 
     <!-- Operation Form -->
     <div>
-      <form id="operation-form">
+      <form id="operation-form" onsubmit="event.preventDefault();">
         <h2>Select Operation:</h2>
       
         <label for="encode">Encode</label>
-        <input id="encode" type="radio" name="operation" value="encode" checked>
+        <input id="encode" type="radio" name="operation" value="encode" onchange="run()" checked>
         
         <label for="decode">Decode</label>
-        <input id="decode" type="radio" name="operation" value="decode">
+        <input id="decode" type="radio" name="operation" value="decode" onchange="run()">
 
         <div>
           <textarea
@@ -39,31 +83,55 @@
             rows="10"
             cols="100"
             placeholder="Word list or word numbers. Example: 'account accuse ...' / '1+4+8 2+4+8 ...' "
+            oninput="run()"
           ></textarea>
         </div>
-
-        <button>Submit</button>
       </form>
     </div>
 
     <hr>
 
     <!-- Operation Result -->
-    <div>
-      <p>Note: "Word" is the only selectable column.</p>
-      <table class="unselectable">
-        <thead>
-          <tr>
-            <th>Index</th>
-            <th>Word</th>
-            <th>Column1</th>
-            <th>Column2</th>
-            <th>Column3</th>
-          </tr>
-        </thead>
-        <tbody id="operation-result">
-        </tbody>
-      </table>
+    <div id="operation-result-wrapper">
+      <p>Note: Hover to focus.</p>
+      <div style="display: flex;">
+        <table class="unselectable" style="border: 2px solid black;">
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Word</th>
+              <th>Column1</th>
+              <th>Column2</th>
+              <th>Column3</th>
+            </tr>
+          </thead>
+          <tbody id="operation-result-1">
+          </tbody>
+        </table>
+        <div style="width: 10px;"></div>
+        <table class="unselectable" style="border: 2px solid black;">
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Word</th>
+              <th>Column1</th>
+              <th>Column2</th>
+              <th>Column3</th>
+            </tr>
+          </thead>
+          <tbody id="operation-result-2">
+          </tbody>
+        </table>
+      </div>
+      <div></div>
+      <div style="height: 10px;"></div>
+      <textarea
+        id="operation-result-text"
+        style="background-color: #f7f7f7; display: none;"
+        disabled
+        rows="10"
+        cols="100"
+      ></textarea>
     </div>
 
     <!-- Dotmap List -->
@@ -14422,11 +14490,15 @@
     <script>
       let form = document.getElementById('operation-form');
       let dotmapList = document.getElementById('dotmap-list').children;
-      let operationResult = document.getElementById('operation-result');
+      let operationResult1 = document.getElementById('operation-result-1');
+      let operationResult2 = document.getElementById('operation-result-2');
+      let operationResultText = document.getElementById('operation-result-text');
 
       function encode(targetInputArray) {
         // clear existing result
-        operationResult.innerHTML = '';
+        operationResult1.innerHTML = '';
+        operationResult2.innerHTML = '';
+        operationResultText.innerHTML = '';
 
         let result = [];
         for (const word of targetInputArray) {
@@ -14438,15 +14510,22 @@
           };
         }
 
-        // append result to operationResult
-        result.forEach((row) => {
-          operationResult.appendChild(row.cloneNode(true));
+        // append each 12 results to operationResult1 and operationResult2
+        result.forEach((row, index) => {
+          if (index < 12) {
+            operationResult1.appendChild(row.cloneNode(true));
+          } else {
+            operationResult2.appendChild(row.cloneNode(true));
+          }
         });
+        operationResultText.innerHTML = result.map(el => el.children[1].textContent).join(' ');
       }
 
       function decode(targetInputArray) {
         // clear existing result
-        operationResult.innerHTML = '';
+        operationResult1.innerHTML = '';
+        operationResult2.innerHTML = '';
+        operationResultText.innerHTML = '';
 
         let result = [];
         for (const wordNumber of targetInputArray.map(eval).map(String)) {
@@ -14460,25 +14539,31 @@
         }
 
         // append result to operationResult
-        result.forEach((row) => {
-          operationResult.appendChild(row.cloneNode(true));
+        result.forEach((row, index) => {
+          if (index < 12) {
+            operationResult1.appendChild(row.cloneNode(true));
+          } else {
+            operationResult2.appendChild(row.cloneNode(true));
+          }
         });
+        operationResultText.innerHTML = result.map(el => el.children[1].textContent).join(' ');
       }
 
-      // Listen to form submit
-      form.addEventListener('submit', function(event) {
-        event.preventDefault();
+      // Run selected operation
+      function run() {
         let formData = new FormData(form);
         let operation = formData.get('operation');
         let targetInput = formData.get('targetInput');
-        let targetInputArray = targetInput.split(' ');
+        let targetInputArray = targetInput.split(/\n|\s/);
 
         if (operation === 'encode') {
+          operationResultText.style.display = 'none';
           encode(targetInputArray);
         } else if (operation === 'decode') {
+          operationResultText.style.display = 'block';
           decode(targetInputArray);
         }
-      });
+      }
     </script>
   </body>
 </html>
