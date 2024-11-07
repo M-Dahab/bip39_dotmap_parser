@@ -14554,7 +14554,7 @@
         let formData = new FormData(form);
         let operation = formData.get('operation');
         let targetInput = formData.get('targetInput');
-        let targetInputArray = targetInput.split(/\n|\s/);
+        let targetInputArray = targetInput.split(/\n|\s/).map(el => el.trim().replace(/\+$/, ''));
 
         if (operation === 'encode') {
           operationResultText.style.display = 'none';
