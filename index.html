@@ -82,7 +82,7 @@
             name="targetInput"
             rows="10"
             cols="100"
-            placeholder="Word list or word numbers. Example: 'account accuse ...' / '1+4+8 2+4+8 ...' "
+            placeholder="Word list or word punched dots. Example: 'account accuse ...' / '011100111100 001111010001 ...' "
             oninput="run()"
           ></textarea>
         </div>
@@ -14522,6 +14522,13 @@
       }
 
       function decode(targetInputArray) {
+        // Convert binary dots to word indexes
+        targetInputArray = targetInputArray.map((wordDots, idx) => {
+          return wordDots.split('').reverse().map((dot, idx) => {
+            return dot === '1' ? 2 ** idx : false;
+          }).filter(Boolean).join('+');
+        });
+
         // clear existing result
         operationResult1.innerHTML = '';
         operationResult2.innerHTML = '';
@@ -14554,7 +14561,7 @@
         let formData = new FormData(form);
         let operation = formData.get('operation');
         let targetInput = formData.get('targetInput');
-        let targetInputArray = targetInput.split(/\n|\s/).map(el => el.trim().replace(/\+$/, ''));
+        let targetInputArray = targetInput.split(/\n|\s/);
 
         if (operation === 'encode') {
           operationResultText.style.display = 'none';
